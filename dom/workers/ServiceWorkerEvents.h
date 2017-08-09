@@ -12,6 +12,7 @@
 #include "mozilla/dom/ExtendableMessageEventBinding.h"
 #include "mozilla/dom/FetchEventBinding.h"
 #include "mozilla/dom/File.h"
+#include "mozilla/dom/PaymentRequestEventBinding.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/Response.h"
 #include "mozilla/dom/workers/bindings/ServiceWorker.h"
@@ -262,6 +263,86 @@ public:
   {
     return mData;
   }
+};
+
+class PaymentRequestEvent final : public ExtendableEvent
+{
+   nsString mTopLevelOrigin;
+   nsString mPaymentRequestOrigin;
+   nsString mPaymentRequestId;
+   // total
+   nsString mCurrency;
+   nsString mValue;
+   nsString mInstrumentKey;
+
+protected:
+  explicit PaymentRequestEvent(mozilla::dom::EventTarget* aOwner);
+  ~PaymentRequestEvent() {}
+
+public:
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(PaymentRequestEvent, ExtendableEvent)
+  NS_FORWARD_TO_EVENT
+
+  virtual JSObject* WrapObjectInternal(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override
+  {
+    return mozilla::dom::PaymentRequestEventBinding::Wrap(aCx, this, aGivenProto);
+  }
+
+  static already_AddRefed<PaymentRequestEvent>
+  Constructor(mozilla::dom::EventTarget* aOwner,
+              const nsAString& aType,
+              const PaymentRequestEventInit& aOptions,
+              ErrorResult& aRv);
+
+  static already_AddRefed<PaymentRequestEvent>
+  Constructor(const GlobalObject& aGlobal,
+              const nsAString& aType,
+              const PaymentRequestEventInit& aOptions,
+              ErrorResult& aRv)
+  {
+    nsCOMPtr<EventTarget> owner = do_QueryInterface(aGlobal.GetAsSupports());
+    return Constructor(owner, aType, aOptions, aRv);
+  }
+
+  void GetTopLevelOrigin(nsString& aRetVal) const
+  {
+    aRetVal = mTopLevelOrigin;
+  }
+
+  void GetPaymentRequestOrigin(nsString& aRetVal) const
+  {
+    aRetVal = mPaymentRequestOrigin;
+  }
+
+  void GetPaymentRequestId(nsString& aRetVal) const
+  {
+    aRetVal = mPaymentRequestId;
+  }
+
+  void GetMethodData(JSContext* cx, nsTArray<PaymentMethodData>& aRetVal) const
+  {
+  }
+
+  void GetTotal(JSContext* cx, JS::MutableHandle<JSObject*> aRetVal) const
+  {
+  }
+
+  void GetModifiers(JSContext* cx, nsTArray<PaymentDetailsModifier>& aRetVal) const
+  {
+  }
+
+  void GetInstrumentKey(nsString& aRetVal) const
+  {
+    aRetVal = mInstrumentKey;
+  }
+
+  already_AddRefed<Promise> OpenWindow(const nsAString& url)
+  {
+    return nullptr;
+  }
+
+  void RespondWith(Promise& handlerResponse) {}
 };
 
 class ExtendableMessageEvent final : public ExtendableEvent

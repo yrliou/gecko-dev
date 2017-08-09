@@ -46,6 +46,12 @@ public:
 
   virtual mozilla::ipc::IPCResult RecvNotifyRemoveAll() override;
 
+  virtual mozilla::ipc::IPCResult RecvNotifyPaymentRequestEvent(
+    const OriginAttributes& aOriginAttributes, const nsString& aScope,
+    const nsString& aTopLevelOrigin, const nsString& aPaymentRequestOrigin,
+    const nsString& aPaymentRequestId, const nsString& aCurrency,
+    const nsString& aValue, const nsString& aInstrumentKey) override;
+
   virtual PServiceWorkerUpdaterChild*
   AllocPServiceWorkerUpdaterChild(const OriginAttributes& originAttributes,
                                   const nsCString& scope) override;

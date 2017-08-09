@@ -34,6 +34,7 @@
 #include "mozilla/dom/DOMExceptionBinding.h"
 #include "mozilla/dom/FetchEventBinding.h"
 #include "mozilla/dom/MessagePort.h"
+#include "mozilla/dom/PaymentRequestEventBinding.h"
 #include "mozilla/dom/PromiseNativeHandler.h"
 #include "mozilla/dom/PushEventBinding.h"
 #include "mozilla/dom/PushMessageDataBinding.h"
@@ -1164,6 +1165,45 @@ PushEvent::WrapObjectInternal(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 {
   return mozilla::dom::PushEventBinding::Wrap(aCx, this, aGivenProto);
 }
+
+// Payment Request Event
+PaymentRequestEvent::PaymentRequestEvent(EventTarget* aOwner)
+  : ExtendableEvent(aOwner)
+{
+}
+
+/* static */ already_AddRefed<PaymentRequestEvent>
+PaymentRequestEvent::Constructor(mozilla::dom::EventTarget* aOwner,
+    const nsAString& aType,
+    const PaymentRequestEventInit& aOptions,
+    ErrorResult& aRv)
+{
+  RefPtr<PaymentRequestEvent> e = new PaymentRequestEvent(aOwner);
+  bool trusted = e->Init(aOwner);
+  e->InitEvent(aType, aOptions.mBubbles, aOptions.mCancelable);
+  e->SetTrusted(trusted);
+
+  e->mTopLevelOrigin = aOptions.mTopLevelOrigin;
+  e->mPaymentRequestOrigin = aOptions.mPaymentRequestOrigin;
+  e->mPaymentRequestId = aOptions.mPaymentRequestId;
+  e->mCurrency = aOptions.mTotal.mCurrency;
+  e->mValue = aOptions.mTotal.mValue;
+  e->mInstrumentKey = aOptions.mInstrumentKey;
+
+  return e.forget();
+}
+
+NS_IMPL_ADDREF_INHERITED(PaymentRequestEvent, ExtendableEvent)
+NS_IMPL_RELEASE_INHERITED(PaymentRequestEvent, ExtendableEvent)
+
+NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(PaymentRequestEvent)
+NS_INTERFACE_MAP_END_INHERITING(ExtendableEvent)
+
+NS_IMPL_CYCLE_COLLECTION_CLASS(PaymentRequestEvent)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PaymentRequestEvent, ExtendableEvent)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(PaymentRequestEvent, ExtendableEvent)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 ExtendableMessageEvent::ExtendableMessageEvent(EventTarget* aOwner)
   : ExtendableEvent(aOwner)

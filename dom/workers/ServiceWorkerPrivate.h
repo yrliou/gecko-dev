@@ -124,6 +124,15 @@ public:
                  const nsAString& aDocumentId,
                  bool aIsReload);
 
+  nsresult
+  SendPaymentRequestEvent(const nsAString& aTopLevelOrigin,
+                          const nsAString& aPaymentRequestOrigin,
+                          const nsAString& aPaymentRequestId,
+                          const nsAString& aCurrency,
+                          const nsAString& aValue,
+                          const nsAString& aInstrumentKey,
+                          ServiceWorkerRegistrationInfo* aRegistration);
+
   void
   StoreISupports(nsISupports* aSupports);
 
@@ -171,7 +180,8 @@ private:
     NotificationClickEvent,
     NotificationCloseEvent,
     LifeCycleEvent,
-    AttachEvent
+    AttachEvent,
+    PaymentRequestEvent
   };
 
   // Timer callbacks

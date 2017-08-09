@@ -31,6 +31,15 @@ parent:
 
   async PropagateRemoveAll();
 
+  async PropagatePaymentRequestEvent(OriginAttributes originAttributes,
+                                     nsString scope,
+                                     nsString topLevelOrigin,
+                                     nsString paymentRequestOrigin,
+                                     nsString paymentRequestId,
+                                     nsString currency,
+                                     nsString value,
+                                     nsString instrumentKey);
+
   async Shutdown();
 
   async PServiceWorkerUpdater(OriginAttributes originAttributes,
@@ -42,7 +51,14 @@ child:
   async NotifyUnregister(PrincipalInfo principalInfo, nsString scope);
   async NotifyRemove(nsCString host);
   async NotifyRemoveAll();
-
+  async NotifyPaymentRequestEvent(OriginAttributes originAttributes,
+                                  nsString scope,
+                                  nsString topLevelOrigin,
+                                  nsString paymentRequestOrigin,
+                                  nsString paymentRequestId,
+                                  nsString currency,
+                                  nsString value,
+                                  nsString instrumentKey);
   async __delete__();
 };
 

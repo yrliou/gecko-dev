@@ -1051,6 +1051,108 @@ ServiceWorkerPrivate::SendPushSubscriptionChangeEvent()
 }
 
 namespace {
+class SendPaymentRequestEventRunnable final : public ExtendableFunctionalEventWorkerRunnable
+{
+  nsString mTopLevelOrigin;
+  nsString mPaymentRequestOrigin;
+  nsString mPaymentRequestId;
+  nsString mCurrency;
+  nsString mValue;
+  nsString mInstrumentKey;
+
+public:
+  SendPaymentRequestEventRunnable(
+    WorkerPrivate* aWorkerPrivate,
+    KeepAliveToken* aKeepAliveToken,
+    const nsAString& aTopLevelOrigin,
+    const nsAString& aPaymentRequestOrigin,
+    const nsAString& aPaymentRequestId,
+    const nsAString& aCurrency,
+    const nsAString& aValue,
+    const nsAString& aInstrumentKey,
+    nsMainThreadPtrHandle<ServiceWorkerRegistrationInfo> aRegistration)
+    : ExtendableFunctionalEventWorkerRunnable(
+        aWorkerPrivate, aKeepAliveToken, aRegistration)
+    , mTopLevelOrigin(aTopLevelOrigin)
+    , mPaymentRequestOrigin(aPaymentRequestOrigin)
+    , mPaymentRequestId(aPaymentRequestId)
+    , mCurrency(aCurrency)
+    , mValue(aValue)
+    , mInstrumentKey(aInstrumentKey)
+  {
+    AssertIsOnMainThread();
+    MOZ_ASSERT(aWorkerPrivate);
+    MOZ_ASSERT(aWorkerPrivate->IsServiceWorker());
+  }
+
+  bool
+  WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate) override
+  {
+    MOZ_ASSERT(aWorkerPrivate);
+    GlobalObject globalObj(aCx, aWorkerPrivate->GlobalScope()->GetWrapper());
+
+    PaymentRequestEventInit init;
+    init.mTopLevelOrigin = mTopLevelOrigin;
+    init.mPaymentRequestOrigin = mPaymentRequestOrigin;
+    init.mPaymentRequestId = mPaymentRequestId;
+    init.mTotal.mCurrency = mCurrency;
+    init.mTotal.mValue = mValue;
+    init.mInstrumentKey = mInstrumentKey;
+    init.mBubbles = false;
+    init.mCancelable = false;
+
+    ErrorResult result;
+    RefPtr<PaymentRequestEvent> event = PaymentRequestEvent::Constructor(
+      globalObj, NS_LITERAL_STRING("paymentrequest"), init, result);
+    if (NS_WARN_IF(result.Failed())) {
+      result.SuppressException();
+      return false;
+    }
+    event->SetTrusted(true);
+
+    DispatchExtendableEventOnWorkerScope(aCx, aWorkerPrivate->GlobalScope(),
+                                         event, nullptr);
+
+    return true;
+  }
+};
+} // anonymous namespace
+
+nsresult
+ServiceWorkerPrivate::SendPaymentRequestEvent(
+  const nsAString& aTopLevelOrigin, const nsAString& aPaymentRequestOrigin,
+  const nsAString& aPaymentRequestId, const nsAString& aCurrency,
+  const nsAString& aValue, const nsAString& aInstrumentKey,
+  ServiceWorkerRegistrationInfo* aRegistration)
+{
+  nsresult rv = SpawnWorkerIfNeeded(PaymentRequestEvent, nullptr);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  RefPtr<KeepAliveToken> token = CreateEventKeepAliveToken();
+
+  nsMainThreadPtrHandle<ServiceWorkerRegistrationInfo> regInfo(
+    new nsMainThreadPtrHolder<ServiceWorkerRegistrationInfo>(
+      "ServiceWorkerRegistrationInfo", aRegistration, false));
+
+  RefPtr<WorkerRunnable> runnable = new SendPaymentRequestEventRunnable(
+    mWorkerPrivate, token, aTopLevelOrigin, aPaymentRequestOrigin,
+    aPaymentRequestId, aCurrency, aValue, aInstrumentKey, regInfo);
+
+  if (mInfo->State() == ServiceWorkerState::Activating) {
+    mPendingFunctionalEvents.AppendElement(runnable.forget());
+    return NS_OK;
+  }
+
+  MOZ_ASSERT(mInfo->State() == ServiceWorkerState::Activated);
+
+  if (NS_WARN_IF(!runnable->Dispatch())) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return NS_OK;
+}
+
+namespace {
 
 class AllowWindowInteractionHandler final : public ExtendableEventCallback
                                           , public nsITimerCallback

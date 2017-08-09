@@ -299,6 +299,26 @@ ServiceWorkerManagerParent::RecvPropagateRemoveAll()
 }
 
 mozilla::ipc::IPCResult
+ServiceWorkerManagerParent::RecvPropagatePaymentRequestEvent(
+  const OriginAttributes& aOriginAttributes, const nsString& aScope,
+  const nsString& aTopLevelOrigin, const nsString& aPaymentRequestOrigin,
+  const nsString& aPaymentRequestId, const nsString& aCurrency,
+  const nsString& aValue, const nsString& aInstrumentKey)
+{
+  AssertIsOnBackgroundThread();
+
+  if (NS_WARN_IF(!mService)) {
+    return IPC_FAIL_NO_REASON(this);
+  }
+
+  mService->PropagatePaymentRequestEvent(mID, aOriginAttributes, aScope,
+    aTopLevelOrigin, aPaymentRequestOrigin, aPaymentRequestId,
+    aCurrency, aValue, aInstrumentKey);
+
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult
 ServiceWorkerManagerParent::RecvShutdown()
 {
   AssertIsOnBackgroundThread();

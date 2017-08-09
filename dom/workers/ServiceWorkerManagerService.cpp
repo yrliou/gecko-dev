@@ -249,6 +249,37 @@ ServiceWorkerManagerService::PropagateRemoveAll(uint64_t aParentID)
 }
 
 void
+ServiceWorkerManagerService::PropagatePaymentRequestEvent(
+  uint64_t aParentID, const OriginAttributes& aOriginAttributes,
+  const nsString& aScope, const nsString& aTopLevelOrigin,
+  const nsString& aPaymentRequestOrigin, const nsString& aPaymentRequestId,
+  const nsString& aCurrency, const nsString& aValue,
+  const nsString& aInstrumentKey)
+{
+  AssertIsOnBackgroundThread();
+
+  DebugOnly<bool> parentFound = false;
+  for (auto iter = mAgents.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<ServiceWorkerManagerParent> parent = iter.Get()->GetKey();
+    MOZ_ASSERT(parent);
+
+    if (parent->ID() != aParentID) {
+      Unused << parent->SendNotifyPaymentRequestEvent(aOriginAttributes,
+        aScope, aTopLevelOrigin, aPaymentRequestOrigin, aPaymentRequestId,
+        aCurrency, aValue, aInstrumentKey);
+#ifdef DEBUG
+    } else {
+      parentFound = true;
+#endif
+    }
+  }
+
+#ifdef DEBUG
+  MOZ_ASSERT(parentFound);
+#endif
+}
+
+void
 ServiceWorkerManagerService::ProcessUpdaterActor(ServiceWorkerUpdaterParent* aActor,
                                                  const OriginAttributes& aOriginAttributes,
                                                  const nsACString& aScope,

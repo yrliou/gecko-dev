@@ -103,6 +103,28 @@ ServiceWorkerManagerChild::RecvNotifyRemoveAll()
   return IPC_OK();
 }
 
+mozilla::ipc::IPCResult
+ServiceWorkerManagerChild::RecvNotifyPaymentRequestEvent(
+  const OriginAttributes& aOriginAttributes, const nsString& aScope,
+  const nsString& aTopLevelOrigin, const nsString& aPaymentRequestOrigin,
+  const nsString& aPaymentRequestId, const nsString& aCurrency,
+  const nsString& aValue, const nsString& aInstrumentKey)
+{
+  if (mShuttingDown) {
+    return IPC_OK();
+  }
+
+  RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+  if (swm) {
+    swm->SendPaymentRequestEvent(
+      aOriginAttributes, NS_ConvertUTF16toUTF8(aScope), aTopLevelOrigin,
+      aPaymentRequestOrigin, aPaymentRequestId, aCurrency, aValue,
+      aInstrumentKey);
+  }
+
+  return IPC_OK();
+}
+
 PServiceWorkerUpdaterChild*
 ServiceWorkerManagerChild::AllocPServiceWorkerUpdaterChild(const OriginAttributes& aOriginAttributes,
                                                            const nsCString& aScope)
