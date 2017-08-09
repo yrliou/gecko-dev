@@ -54,6 +54,13 @@ public:
 
   void PropagateRemoveAll(uint64_t aParentID);
 
+  void PropagatePaymentRequestEvent(
+    uint64_t aParentID, const OriginAttributes& aOriginAttributes,
+    const nsString& aScope, const nsString& aTopLevelOrigin,
+    const nsString& aPaymentRequestOrigin, const nsString& aPaymentRequestId,
+    const nsString& aCurrency, const nsString& aValue,
+    const nsString& aInstrumentKey);
+
   void ProcessUpdaterActor(ServiceWorkerUpdaterParent* aActor,
                            const OriginAttributes& aOriginAttributes,
                            const nsACString& aScope,

@@ -336,6 +336,26 @@ public:
   void
   WorkerIsIdle(ServiceWorkerInfo* aWorker);
 
+  void
+  PropagatePaymentRequestEvent(const OriginAttributes& aOriginAttributes,
+                               const nsAString& aScope,
+                               const nsAString& aTopLevelOrigin,
+                               const nsAString& aPaymentRequestOrigin,
+                               const nsAString& aPaymentRequestId,
+                               const nsAString& aCurrency,
+                               const nsAString& aValue,
+                               const nsAString& aInstrumentKey);
+
+  nsresult
+  SendPaymentRequestEvent(const OriginAttributes& aOriginAttributes,
+                          const nsACString& aScope,
+                          const nsAString& aTopLevelOrigin,
+                          const nsAString& aPaymentRequestOrigin,
+                          const nsAString& aPaymentRequestId,
+                          const nsAString& aCurrency,
+                          const nsAString& aValue,
+                          const nsAString& aInstrumentKey);
+
 private:
   ServiceWorkerManager();
   ~ServiceWorkerManager();

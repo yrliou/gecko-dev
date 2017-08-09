@@ -763,6 +763,57 @@ private:
   RefPtr<GenericPromise::Private> mPromise;
 };
 
+class PropagatePaymentRequestEventRunnable final : public Runnable
+{
+public:
+  PropagatePaymentRequestEventRunnable(
+    const OriginAttributes& aOriginAttributes,
+    const nsAString& aScope,
+    const nsAString& aTopLevelOrigin,
+    const nsAString& aPaymentRequestOrigin,
+    const nsAString& aPaymentRequestId,
+    const nsAString& aCurrency,
+    const nsAString& aValue,
+    const nsAString& aInstrumentKey)
+    : Runnable("dom::workers::PropagatePaymentRequestEventRunnable")
+    , mOriginAttributes(aOriginAttributes)
+    , mScope(aScope)
+    , mTopLevelOrigin(aTopLevelOrigin)
+    , mPaymentRequestOrigin(aPaymentRequestOrigin)
+    , mPaymentRequestId(aPaymentRequestId)
+    , mCurrency(aCurrency)
+    , mValue(aValue)
+    , mInstrumentKey(aInstrumentKey)
+  {}
+
+  NS_IMETHOD Run() override
+  {
+    AssertIsOnMainThread();
+
+    RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
+    if (swm) {
+      swm->PropagatePaymentRequestEvent(mOriginAttributes, mScope,
+        mTopLevelOrigin, mPaymentRequestOrigin, mPaymentRequestId,
+        mCurrency, mValue, mInstrumentKey);
+    }
+
+    return NS_OK;
+  }
+
+private:
+  ~PropagatePaymentRequestEventRunnable()
+  {}
+
+  const OriginAttributes mOriginAttributes;
+  const nsString mScope;
+  const nsString mTopLevelOrigin;
+  const nsString mPaymentRequestOrigin;
+  const nsString mPaymentRequestId;
+  const nsString mCurrency;
+  const nsString mValue;
+  const nsString mInstrumentKey;
+};
+
 } // namespace
 
 // This function implements parts of the step 3 of the following algorithm:
@@ -1368,6 +1419,52 @@ ServiceWorkerManager::SendNotificationCloseEvent(const nsACString& aOriginSuffix
   return SendNotificationEvent(NS_LITERAL_STRING(NOTIFICATION_CLOSE_EVENT_NAME),
                                aOriginSuffix, aScope, aID, aTitle, aDir, aLang,
                                aBody, aTag, aIcon, aData, aBehavior);
+}
+
+void
+ServiceWorkerManager::PropagatePaymentRequestEvent(
+  const OriginAttributes& aOriginAttributes, const nsAString& aScope,
+  const nsAString& aTopLevelOrigin, const nsAString& aPaymentRequestOrigin,
+  const nsAString& aPaymentRequestId, const nsAString& aCurrency,
+  const nsAString& aValue, const nsAString& aInstrumentKey)
+{
+  AssertIsOnMainThread();
+
+  if (!mActor) {
+    RefPtr<nsIRunnable> runnable =
+      new PropagatePaymentRequestEventRunnable(aOriginAttributes, aScope,
+        aTopLevelOrigin, aPaymentRequestOrigin, aPaymentRequestId,
+        aCurrency, aValue, aInstrumentKey);
+    AppendPendingOperation(runnable);
+    return;
+  }
+
+  mActor->SendPropagatePaymentRequestEvent(
+    aOriginAttributes, nsString(aScope), nsString(aTopLevelOrigin),
+    nsString(aPaymentRequestOrigin), nsString(aPaymentRequestId),
+    nsString(aCurrency), nsString(aValue), nsString(aInstrumentKey));
+}
+
+NS_IMETHODIMP
+ServiceWorkerManager::SendPaymentRequestEvent(
+  const OriginAttributes& aOriginAttributes, const nsACString& aScope,
+  const nsAString& aTopLevelOrigin, const nsAString& aPaymentRequestOrigin,
+  const nsAString& aPaymentRequestId, const nsAString& aCurrency,
+  const nsAString& aValue, const nsAString& aInstrumentKey)
+{
+  ServiceWorkerInfo* serviceWorker =
+    GetActiveWorkerInfoForScope(aOriginAttributes, aScope);
+  if (!serviceWorker) {
+    return NS_ERROR_FAILURE;
+  }
+
+  RefPtr<ServiceWorkerRegistrationInfo> registration =
+    GetRegistration(serviceWorker->Principal(), aScope);
+  MOZ_DIAGNOSTIC_ASSERT(registration);
+
+  return serviceWorker->WorkerPrivate()->SendPaymentRequestEvent(
+    aTopLevelOrigin, aPaymentRequestOrigin, aPaymentRequestId, aCurrency,
+    aValue, aInstrumentKey, registration);
 }
 
 NS_IMETHODIMP

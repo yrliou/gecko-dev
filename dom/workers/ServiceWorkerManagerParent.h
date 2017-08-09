@@ -54,6 +54,12 @@ private:
 
   virtual mozilla::ipc::IPCResult RecvPropagateRemoveAll() override;
 
+  virtual mozilla::ipc::IPCResult RecvPropagatePaymentRequestEvent(
+    const OriginAttributes& aOriginAttributes, const nsString& aScope,
+    const nsString& aTopLevelOrigin, const nsString& aPaymentRequestOrigin,
+    const nsString& aPaymentRequestId, const nsString& aCurrency,
+    const nsString& aValue, const nsString& aInstrumentKey) override;
+
   virtual mozilla::ipc::IPCResult RecvShutdown() override;
 
   virtual PServiceWorkerUpdaterParent*
